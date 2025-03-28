@@ -16,7 +16,9 @@ struct FocusManagerModifier : ViewModifier{
             .onAppear {
                 if managerEnv != nil {
                     ErrorGenerator(error:.focusManagerAlreadyExist(managerEnv!, manager))
+                    return
                 }
+                
             }
             .environment(\.focusManager, managerEnv == nil ? manager : managerEnv!)
     }

@@ -88,11 +88,11 @@ import SwiftUI
                 
                 containerManagerEnv.go(to: myFocus)
             }
-            .onChange(of: containerManagerEnv?.currentContainer?.myFocus.myHash){
+            .onChange(of: containerManagerEnv?.currentContainer?.myFocus.myHash, initial: true){
                 
                 guard let containerManagerEnv else { ErrorGenerator(error: .noFocusManagerFoundFor(myFocus));return}
               
-                guard let newContainer else { return}
+                guard let newContainer else {return}
                 guard isFocusEnabled else {
 
                     return}

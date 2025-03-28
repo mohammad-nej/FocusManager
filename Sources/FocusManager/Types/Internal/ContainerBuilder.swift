@@ -13,7 +13,7 @@
     }
      func build() -> [FocusContainer] {
         var all :  [FocusContainer] = []
-        var result : FocusContainer?
+         var _ : FocusContainer?
         for item in allCase {
             all.append(.init(current: item))
         }

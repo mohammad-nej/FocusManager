@@ -18,7 +18,6 @@ struct EnableFocusModifier : ViewModifier {
     func body(content: Content) -> some View {
         VStack{
             content
-            Text("isFocusEnabled : \(isFocuseEnabled.description)")
         }
         .onAppear {
                 
@@ -31,21 +30,35 @@ struct EnableFocusModifier : ViewModifier {
             
             myContainer.isFocusable = isFocuseEnabled
             setFocusableForChildren(of: myContainer)
+            
+            if (manager.currentContainer?.myHash == myContainer.myHash) && !isFocuseEnabled {
+                manager.unFocus()
+            }
                 
         }.environment(\.focuseEnabled, isFocuseEnabled)
     }
     private func setFocusableForChildren(of container : FocusContainer ){
-        
+        guard let manager else { return}
         guard container.hasChildren else { return }
         var currentChild : FocusContainer?
         for child in container.children{
             currentChild = child
             currentChild?.isFocusable = isFocuseEnabled
+            
+            if manager.currentContainer?.myHash == currentChild?.myHash {
+                manager.unFocus()
+            }
+            
             guard currentChild != nil else { continue }
             currentChild = currentChild!.nextFocus
             while(true){
                 guard currentChild?.parent == container else { break }
                 currentChild?.isFocusable = isFocuseEnabled
+                
+                if manager.currentContainer?.myHash == currentChild?.myHash {
+                    manager.unFocus()
+                }
+                
                 currentChild = currentChild?.nextFocus
             }
             setFocusableForChildren(of: child)

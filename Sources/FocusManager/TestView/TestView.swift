@@ -6,26 +6,28 @@
 //
 
 import SwiftUI
-import FocusManager
+
 
 enum BirthDay : FocusableFeilds{
     case day , month , year
 }
-func test(){
-    
-    let manager = FocusManager(for: BirthDay.self )
-    
-}
+
 
 
 struct ExampleView : View {
     
     enum Fields : FocusableFeilds {
         case name , family , birthDay , age
+        static var initialFocusState: ExampleView.Fields?{
+            .family
+        }
     }
     
     enum BirthDay : FocusableFeilds {
         case day , month , year
+        static var initialFocusState: ExampleView.BirthDay{
+            .month
+        }
     }
     
     
@@ -38,14 +40,18 @@ struct ExampleView : View {
     
     @State private var age : String = ""
     
-    let manager = FocusManager(for: Fields.self)
+    private let manager = FocusManager(for: Fields.self)
     var body : some View {
         VStack{
             
-            Button("Go Next"){
-                manager.goNext()
+            HStack{
+                Button("Go Next"){
+                    manager.goNext()
+                }
+                Button("Go Prev"){
+                    manager.goPrev()
+                }
             }
-            
             TextField("Name", text: $name)
                 .myFocus(Fields.name)
             TextField("Family", text: $family)
@@ -65,11 +71,19 @@ struct ExampleView : View {
                 .myFocus(Fields.age)
             
         }.focusManager(manager)
+            .textFieldStyle(.roundedBorder)
+            .onAppear{
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2){
+                    manager.goToFirstElement()
+                }
+            }
     }
     
     
 }
-
+#Preview {
+    ExampleView()
+}
 
 //struct TestView : View {
 //    

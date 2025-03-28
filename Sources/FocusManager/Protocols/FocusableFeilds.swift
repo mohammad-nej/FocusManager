@@ -30,36 +30,7 @@ import Foundation
 ///
 @MainActor public protocol FocusableFeilds:Sendable,   Hashable , Equatable, CaseIterable {
     
-    static var initialFocusState : Self? { get }
-    static var onTapFocusState : Self? { get }
-    var nextElement : Self? { get }
-    var prevElement : Self? { get }
-    var lastElement : Self? { get }
-}
-public extension FocusableFeilds {
-    
-    static var allFocusableFeilds : [any FocusableFeilds] {
-        return Self.allCases.map{$0 as any FocusableFeilds}
-    }
-    
-    ///a name created using String(describing) function, used for debugging
-    var name : String {
-        String(describing: self)
-    }
-    
-    ///a unique hash created for each field
-    var myHash : Int {
-        
-        let type = type(of: self)
-        let description = String(describing: type)
-
-        var hasher = Hasher()
-        hasher.combine(self)
-        hasher.combine(description)
-        return hasher.finalize()
-    }
-    
-    ///By setting this to any other value than nil, when setting focus on a specefic element, focusManager will automaticly jumps to your selected child
+    ///By setting this to any other value than nil, focusManager will automatically jumps to your selected child
     ///
     ///```swift
     ///     VStack{
@@ -77,6 +48,29 @@ public extension FocusableFeilds {
     ///          static var initialFocusState : Self? { .month }
     ///     }
     ///```
+    static var initialFocusState : Self? { get }
+
+}
+public extension FocusableFeilds {
+ 
+    ///a name created using String(describing) function, used for debugging
+    var name : String {
+        String(describing: self)
+    }
+    
+    ///a unique hash created for each field
+    var myHash : Int {
+        
+        let type = type(of: self)
+        let description = String(describing: type)
+
+        var hasher = Hasher()
+        hasher.combine(self)
+        hasher.combine(description)
+        return hasher.finalize()
+    }
+    
+ 
     static var initialFocusState : Self? {
         return nil
     }
@@ -113,8 +107,6 @@ public extension FocusableFeilds {
         guard let prev else { return nil}
         return allCases[prev]
     }
-    static var onTapFocusState : Self? {
-        return Self.allCases.first
-    }
+
 
 }

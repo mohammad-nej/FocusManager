@@ -121,6 +121,7 @@ import Testing
         #expect(Feilds.family.hashValue != BirthDay.month.hashValue)
         
         let modifier = FocusManager(for: Feilds.self)
+        modifier.goToFirstElement()
         
         let family = try #require(modifier.find(Feilds.family, in: modifier.currentContainer))
         
@@ -159,7 +160,8 @@ import Testing
         let month = try #require(modifier.find(BirthDay.month, in: current))
         let year = try #require(modifier.find(BirthDay.year, in: current))
         
-        #expect(first.prevFocus?.myHash == family.prevFocus?.myHash)
+        #expect(first.prevFocus == nil)
+        
         #expect(first.nextFocus?.myHash == month.myHash)
         #expect(month.prevFocus?.myHash == first.myHash)
         
@@ -173,10 +175,9 @@ import Testing
     }
     @Test("Go Next") func goNext() throws {
         let modifier = FocusManager(for: Feilds.self)
-        
-        
-        
         modifier.insert(BirthDay.self, under: Feilds.birthDay)
+        
+        modifier.goToFirstElement()
         
         var element = try #require(goNext(with: modifier))
         #expect(element.myFocus.myHash == Feilds.family.myHash)
@@ -194,7 +195,7 @@ import Testing
         #expect(element.myFocus.myHash == Feilds.age.myHash)
         
         element = try #require(goNext(with: modifier))
-        #expect(element.myFocus.myHash == Feilds.name.myHash)
+        #expect(element.myFocus.name == "name")
         
     }
     @Test("Go Prev") func goPrev() throws {
@@ -202,11 +203,13 @@ import Testing
         
         modifier.insert(BirthDay.self, under: Feilds.birthDay)
         
+        modifier.goToFirstElement()
+        
         let age = try #require(modifier.find(Feilds.age, in: modifier.currentContainer))
-        modifier.currentContainer = age
+        modifier.go(to: age.myFocus)
         
         var element = try #require(goPrev(with: modifier))
-        #expect(element.myFocus.myHash == BirthDay.year.myHash)
+        #expect(element.myFocus.name == BirthDay.year.name)
         
         element = try #require(goPrev(with: modifier))
         #expect(element.myFocus.myHash == BirthDay.month.myHash)
@@ -215,7 +218,7 @@ import Testing
         #expect(element.myFocus.myHash == BirthDay.day2.myHash)
         
         element = try #require(goPrev(with: modifier))
-        #expect(element.myFocus.myHash == Feilds.family.myHash)
+        #expect(element.myFocus.name == "family")
         
         element = try #require(goPrev(with: modifier))
         #expect(element.myFocus.myHash == Feilds.name.myHash)

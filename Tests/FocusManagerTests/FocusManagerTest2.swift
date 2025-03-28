@@ -42,9 +42,10 @@ import Testing
     
     @Test("Test a view with multiple children") func testMultipleChildren() async throws {
         let manager = FocusManager(for: Feilds.self)
-        manager.insert(Birthday.self, under: Feilds.details)
         manager.insert(Address.self, under: Feilds.details)
-        
+        manager.insert(Birthday.self, under: Feilds.details)
+       
+        manager.goToFirstElement()
         let details = try #require(manager.find(Feilds.details, in: manager.initial))
         
         #expect(details.hasChildren)
@@ -56,7 +57,7 @@ import Testing
         
         let day = try #require(manager.find(Birthday.day, in: manager.initial))
         let firstChildLastElementsNextPointer = day.nextFocus
-        #expect(firstChildPrev?.myFocus.name == "family")
+        #expect(firstChildPrev == nil)
         #expect(firstChildLastElementsNextPointer?.myFocus.name == "city")
         
         let city = try #require(manager.find(Address.city, in: manager.initial))
@@ -70,9 +71,10 @@ import Testing
     
     @Test("Going forward in view with multiple children") func testMultipleChildrenForward() async throws {
         let manager = FocusManager(for: Feilds.self)
-        manager.insert(Birthday.self, under: Feilds.details)
         manager.insert(Address.self, under: Feilds.details)
-        
+
+        manager.insert(Birthday.self, under: Feilds.details)
+                
         manager.go(to: Feilds.family)
         #expect(manager.currentFocus?.name == "family")
         
@@ -98,8 +100,9 @@ import Testing
     
     @Test("Going forward with initialSelect element enabled") func testMultipleChildrenForwardWithInitialSelect() async throws {
         let manager = FocusManager(for: Feilds2.self)
-        manager.insert(Birthday2.self, under: Feilds2.details)
         manager.insert(Address2.self, under: Feilds2.details)
+        manager.insert(Birthday2.self, under: Feilds2.details)
+     
         
         manager.go(to: Feilds2.family)
         
@@ -126,15 +129,16 @@ import Testing
         #expect(manager.currentFocus?.name == "age")
         
         manager.goNext()
-        #expect(manager.currentFocus?.name == "name")
+        #expect(manager.currentFocus?.name == "family")
         
     }
     
     @Test("Jumping over disabled focus elements while moving around") func jumpingOverDisabledElements() async throws {
         
         let manager = FocusManager(for: Feilds2.self)
-        manager.insert(Birthday2.self, under: Feilds2.details)
         manager.insert(Address2.self, under: Feilds2.details)
+        manager.insert(Birthday2.self, under: Feilds2.details)
+       
         
         let family = try #require(manager.find(Feilds2.family, in: manager.initial))
         family.isFocusable = false
@@ -145,6 +149,9 @@ import Testing
         let day = try #require(manager.find(Birthday2.day , in: manager.initial))
         day.isFocusable = false
         
+        
+//        manager.goNext()
+//        #expect(manager.currentFocus?.name == "name")
         
         manager.goNext()
         #expect(manager.currentFocus?.name == "month")
@@ -162,19 +169,19 @@ import Testing
         #expect(manager.currentFocus?.name == "country")
         
         manager.goNext()
+        #expect(manager.currentFocus?.name == "month")
+        
+        manager.goPrev()
+        #expect(manager.currentFocus?.name == "year")
+        
+        manager.goPrev()
         #expect(manager.currentFocus?.name == "name")
-        
-        manager.goPrev()
-        #expect(manager.currentFocus?.name == "country")
-        
-        manager.goPrev()
-        #expect(manager.currentFocus?.name == "city")
         
         manager.goToLastElement()
         #expect(manager.currentFocus?.name == "country")
         
         manager.goToFirstElement()
-        #expect(manager.currentFocus?.name == "name")
+        #expect(manager.currentFocus?.name == "month")
         
         let name = manager.find(Feilds2.name, in: manager.initial)
         name?.isFocusable = false
@@ -182,6 +189,24 @@ import Testing
         manager.goToFirstElement()
         #expect(manager.currentFocus?.name == "month")
 
+        
+    }
+    
+    @Test("What if everything is disabled?!") func everythingDisabled() {
+        let manager = FocusManager(for: Address.self)
+        
+        manager.goToFirstElement()
+        
+        let city = manager.currentContainer!
+        city.isFocusable = false
+        
+        let country = manager.currentContainer?.nextFocus!
+        country?.isFocusable = false
+        manager.unFocus()
+        
+        manager.goNext()
+        #expect(manager.currentFocus == nil)
+        
         
     }
 }

@@ -18,7 +18,6 @@ import SwiftUI
  
     public func body(content: Content) -> some View{
         content
-          
             .onChange(of: manager?.currentContainer?.myFocus.myHash,initial: true){
                 guard focusEnabled else {isFocused = false;return}
                 guard let myFocus else { isFocused = false;return}
