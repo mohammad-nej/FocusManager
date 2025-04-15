@@ -6,7 +6,8 @@
 //
 
 
-@MainActor  final class ContainerBuilder {
+//This class only use for building containers programaticly to be used in Test functions
+final class ContainerBuilder {
     let allCase : [any FocusableFeilds]
      init(allCases : [any FocusableFeilds]){
         self.allCase = allCases

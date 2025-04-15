@@ -12,6 +12,7 @@ public extension  EnvironmentValues  {
     ///
     /// - Warning: don't attempt to set this value using .environment(), always use .focusManager() viewModifier instead.
     @Entry var focusManager : FocusManager? = nil
+    
 }
  extension EnvironmentValues {
     @Entry var currentFocusContainer : FocusContainer? = nil

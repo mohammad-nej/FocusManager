@@ -67,7 +67,9 @@ public extension View {
     func myFocus(_ myFocus : any FocusableFeilds) -> some View {
             modifier(MyFocusVM2(myFocus: myFocus))
     }
-    
+    func getContainer( _ container : Binding<FocusContainer?>) -> some View {
+        modifier(GetContainer(binding:container))
+    }
     ///By setting this to false , you can prevent an element from being focused.
     /// - Note: In order for this modifier to work correctly it has to be applied `before` myFocus modifier
     /// ```swift
@@ -79,8 +81,26 @@ public extension View {
     func focusEnable(_ enable : Bool) -> some View {
         modifier(EnableFocusModifier(isFocuseEnabled: enable))
     }
-    
+    func onGetFocus(_ action : @escaping (FocusContainer?,FocusManager?) -> ()) -> some View{
+        modifier(OnFocusModifier(action: action))
+    }
+    func onLoseFocus(_ action : @escaping (FocusContainer?,FocusManager?) -> ()) -> some View{
+        modifier(OnLoseFocusModifier(action: action))
+    }
+    func getFocusManager(_ manager : Binding<FocusManager?>) -> some View{
+        modifier(GetFocusManager(binding:manager))
+    }
+    func onActivation(_ action : @escaping () -> Void , initial : Bool = true) -> some View {
+        modifier(OnActivationModifier(action: action, initialTrigger: initial))
+    }
     ///Lets you now if this element ( or any of it's children) has the focus or not.
+    ///
+    ///You should always use this modifier before ``myFocus(_:)`` or it won't work.
+    ///```swift
+    ///     TextField("Day:",text:$day)
+    ///         .isActive($dayActive)
+    ///         .myFocus(Fields.day)
+    ///```
     /// - Note: `binding` should only be used to read values, wirting to `binding` variable has no effect.
     func isActive(_ binding : Binding<Bool>) -> some View {
       

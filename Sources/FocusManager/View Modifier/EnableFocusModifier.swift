@@ -23,7 +23,7 @@ struct EnableFocusModifier : ViewModifier {
                 
             guard let myFocusEnv else { return }
             guard let manager else { ErrorGenerator(error: .noFocusManagerFoundFor(myFocusEnv));return }
-            guard let container else { return}
+            guard let container = container else { return}
             
             let myContainer = manager.find(myFocusEnv, in: container)
             guard let myContainer else { return}
@@ -31,7 +31,7 @@ struct EnableFocusModifier : ViewModifier {
             myContainer.isFocusable = isFocuseEnabled
             setFocusableForChildren(of: myContainer)
             
-            if (manager.currentContainer?.myHash == myContainer.myHash) && !isFocuseEnabled {
+            if (manager.currentContainer == myContainer) && !isFocuseEnabled {
                 manager.unFocus()
             }
                 
@@ -45,7 +45,7 @@ struct EnableFocusModifier : ViewModifier {
             currentChild = child
             currentChild?.isFocusable = isFocuseEnabled
             
-            if manager.currentContainer?.myHash == currentChild?.myHash {
+            if manager.currentContainer == currentChild {
                 manager.unFocus()
             }
             
@@ -55,7 +55,7 @@ struct EnableFocusModifier : ViewModifier {
                 guard currentChild?.parent == container else { break }
                 currentChild?.isFocusable = isFocuseEnabled
                 
-                if manager.currentContainer?.myHash == currentChild?.myHash {
+                if manager.currentContainer == currentChild {
                     manager.unFocus()
                 }
                 

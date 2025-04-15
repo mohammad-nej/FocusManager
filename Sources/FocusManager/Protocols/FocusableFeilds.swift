@@ -9,6 +9,8 @@
 import SwiftUI
 import Foundation
 
+
+
 ///Main protocol to use in this package. In order to create focusable elements, simply create and enum and conform to this protocol
 ///
 ///```swift
@@ -28,7 +30,8 @@ import Foundation
 ///```
 /// - Note: FocusManager object will  traverse the elements <b>in order</b>, which means that order of your enums cases matters.
 ///
-@MainActor public protocol FocusableFeilds:Sendable,   Hashable , Equatable, CaseIterable {
+
+ public protocol FocusableFeilds:Sendable,   Hashable , Equatable, CaseIterable {
     
     ///By setting this to any other value than nil, focusManager will automatically jumps to your selected child
     ///
@@ -48,7 +51,9 @@ import Foundation
     ///          static var initialFocusState : Self? { .month }
     ///     }
     ///```
-    static var initialFocusState : Self? { get }
+    /// - Warning: In order for this variable to work, it has to be visibile inside the scope of ``FocusManager`` thus it's awalys better
+    /// to define it as either
+     static var initialFocusState : Self? { get }
 
 }
 public extension FocusableFeilds {
@@ -58,17 +63,17 @@ public extension FocusableFeilds {
         String(describing: self)
     }
     
-    ///a unique hash created for each field
-    var myHash : Int {
-        
-        let type = type(of: self)
-        let description = String(describing: type)
-
-        var hasher = Hasher()
-        hasher.combine(self)
-        hasher.combine(description)
-        return hasher.finalize()
-    }
+//    ///a unique hash created for each field
+//    var myHash : Int {
+//        
+//        let type = type(of: self)
+//        let description = String(describing: type)
+//
+//        var hasher = Hasher()
+//        hasher.combine(self)
+//        hasher.combine(description)
+//        return hasher.finalize()
+//    }
     
  
     static var initialFocusState : Self? {

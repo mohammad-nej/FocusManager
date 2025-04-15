@@ -5,54 +5,58 @@
 //  Created by MohammavDev on 3/17/25.
 //
 
+import Foundation
 
+public final class FocusContainer :  Equatable, Identifiable , Hashable {
 
-@MainActor  final class FocusContainer : @preconcurrency Equatable  {
+    let uuid : UUID = UUID()
 
-
-    var isFocusable : Bool = true
+    public var isFocusable : Bool = true
     
-    var parent : FocusContainer?
-    var children : [FocusContainer] = []
-    
-    var myHash : Int {
-        return myFocus.myHash
+    public var parent : FocusContainer?
+    public var children : [FocusContainer] = []
+ 
+    public var name : String{
+        myFocus.name
     }
     
-    var hasChildren : Bool {
+    public var hasChildren : Bool {
         return !children.isEmpty
     }
 
-     static func == (lhs: FocusContainer, rhs: FocusContainer) -> Bool {
-        return lhs.myFocus.myHash == rhs.myFocus.myHash
+    public static func == (lhs: FocusContainer, rhs: FocusContainer) -> Bool {
+         return lhs.id == rhs.id
+    }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
      init(current: (any FocusableFeilds)){
         self.myFocus = current
       
     }
-    func create() -> Self {
-        let prevFocus = myFocus.prevElement
-       
-        let nextFocus = myFocus.nextElement
-        
-        if let prevFocus{
-            self.prevFocus = .init(current: prevFocus)
-            self.prevFocus?.nextFocus = self
-        }
-        
-        if let nextFocus{
-            self.nextFocus = .init(current: nextFocus)
-            self.nextFocus?.prevFocus = self
-        }
-        return self
-    }
+//    func create() -> Self {
+//        let prevFocus = myFocus.prevElement
+//       
+//        let nextFocus = myFocus.nextElement
+//        
+//        if let prevFocus{
+//            self.prevFocus = .init(current: prevFocus)
+//            self.prevFocus?.nextFocus = self
+//        }
+//        
+//        if let nextFocus{
+//            self.nextFocus = .init(current: nextFocus)
+//            self.nextFocus?.prevFocus = self
+//        }
+//        return self
+//    }
     public internal(set) var prevFocus : ( FocusContainer)?
     public internal(set) var myFocus : any FocusableFeilds
     public internal(set) var nextFocus : ( FocusContainer)?
 }
-extension FocusContainer : @preconcurrency CustomDebugStringConvertible {
+extension FocusContainer : CustomDebugStringConvertible {
     public var debugDescription: String {
-        return "prev:\(prevFocus?.myFocus.myHash.description ?? "nil") , my : \(myFocus.myHash.description), next : \(nextFocus?.myFocus.myHash.description ?? "nil")"
+        return "prev:\(prevFocus?.myFocus.name.description ?? "nil") , my : \(myFocus.name.description), next : \(nextFocus?.myFocus.name.description ?? "nil")"
     }
 }
 

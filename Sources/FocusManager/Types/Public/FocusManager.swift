@@ -9,7 +9,11 @@ import SwiftUI
 
 @Observable
 ///Use this control focus in your views. This object should be inserted only once in your view hierarchy.
-@MainActor public class FocusManager{
+@MainActor public class FocusManager : Identifiable{
+    
+    
+    
+    public let id : UUID = UUID()
     
     @MainActor enum Direction : Equatable{
         case forward , backward
@@ -21,7 +25,7 @@ import SwiftUI
     }
     
 
-    var currentContainer : FocusContainer?
+    public internal(set) var currentContainer : FocusContainer?
     
     ///currently focused element.
     public var currentFocus : (any FocusableFeilds)?{
@@ -29,23 +33,29 @@ import SwiftUI
     }
     
     var initial : FocusContainer?
-    var allCases : [any FocusableFeilds]
+
+    var lastMove : Direction?
     
     ///Indicate if manager should loop around when reaching top/bottom of the list or not.
     public var strategy : TraversingStrategy = .loop
 
-    ///Initialize and creates a Manager for you based the given type
-    public  init<Focusable:FocusableFeilds>(for model : Focusable.Type){
+    ///Initialize and creates a Manager for you
+    public init (){
+        currentContainer = nil
+        initial = nil
+        
+    }
+    internal  init<Focusable:FocusableFeilds>(for model : Focusable.Type){
         let all : [Focusable] = model.allCases.map({$0})
         let linkedList = ContainerBuilder(all.first!).build().first
+        
         currentContainer = nil
         initial = linkedList
-        allCases = all
         
     }
     /// A debug description indicating first 2  nodes in the list.
     public var debugDescription: String {
-        return "Manager for : \(initial?.myFocus.name ?? "nil") , \(initial?.nextFocus?.myFocus.name ?? "nil") , ..."
+        return "Manager for : \(initial?.name ?? "nil") , \(initial?.nextFocus?.name ?? "nil") , ..."
     }
 
     private func moveIn(direction : Direction){
@@ -81,6 +91,7 @@ import SwiftUI
     
     ///Goes to the first focusable element in the UI
     public func goToFirstElement(){
+        lastMove = nil
         guard hasAtLeastOneFocusableElement() else { return}
         
         self.currentContainer = _goToFirstElement()
@@ -105,123 +116,119 @@ import SwiftUI
     
     ///Goes to the last element in the UI
     public func goToLastElement(){
+        lastMove = nil
         guard hasAtLeastOneFocusableElement() else { return}
         let last = goToLastElement(in: initial)
-        self.currentContainer = last
+        
+        if ((last?.hasChildren) != nil){
+            goToNextInitialElement(for: last!)
+        }
         skipNonFocusableElements(direction: .backward)
     }
     
     private func _goToLastActualElement(in container : FocusContainer?) -> FocusContainer? {
-        //because of how swiftUI modifiers work, when we are creating the link list ,
-        //there are some inconsistencies  with creating focus.prevFocus in focusContainers,
-        //this function will ensure that when we are moving to a previous element, we are actually moving to a leaf node
-        /// ```swift
-        ///     VStack{
-        ///         TextFeild(...)
-        ///             .myFocus(something)
-        ///          TextFeild(..)
-        ///             .myFocus(other)
-        ///       }
-        ///     .myFocus(parent)
-        ///     VStack{
-        ///         Text(...)
-        ///         .myFocus(another)
-        ///     }.myFocus(parent2)
-        ///
-        ///in this case SwiftUI calls the modifiers from bottom to up, thus when creating link list for `parent` since `something` and `other` are not called yet they don't exists
-        ///thus it doesn't take them into account when setting `another.prevFocus` , thus when going backward we have to check if the prev node has any child(recursively),
-        ///and if it does so , we should go to the last element of it's children. in this case `another.prevFocus` should be `other`.
-        ///this problem doesn't happen for container.nextFocus because when calling from bottom to up the next element is already created xD !
+       
         guard container != nil else { return nil}
         guard container!.hasChildren else { return container}
         var child : FocusContainer? = container!.children.last!
+        
+        //Going to the last node of the last child
+        while(true){
+            let next = child?.nextFocus
+            if next == nil{
+                break
+            }
+            child = next
+        }
+        
+        //if that last node also has a child , we have to repeat the process recursively
         while(true){
             guard child != nil else { return nil}
             if child!.hasChildren{
                child = _goToLastActualElement(in: child!)
                 return child
-            }else{
-                let currentParent = child?.parent
-                while(true){
-                    let next = child?.nextFocus
-                    guard let next else { return child}
-                    if next.parent != currentParent{
-                        return child
-                    }
-                    child = next
-                }
             }
+            return child
         }
     }
     
     ///Goes to the next focusable element in the UI
     public func goNext(){
+        lastMove = .forward
         guard hasAtLeastOneFocusableElement() else { return}
+//        skipNonFocusableElements(direction: .forward)
         guard currentContainer != nil else {
             goToFirstElement()
             return
         }
-        let next = currentContainer?.nextFocus
+        var next = currentContainer?.nextFocus
+        
+      
+        
+        if next == nil {
+            //if next is nil, we must check if it has any siblings after it or not ?
+            while(true){
+                if currentContainer?.parent != nil {
+                    let parent = currentContainer!.parent
+                    guard let parent else {
+                        break
+                    }
+                    if parent.nextFocus == nil {
+                        currentContainer = parent
+                        continue
+                    }
+                    currentContainer = parent.nextFocus
+                    
+                    if currentContainer != nil{
+                        //if it does, we should go to next initial element of it's next sibling
+                        let first = currentContainer?.children.first
+                        if let first{
+                            currentContainer = first
+                        }
+
+                        goToNextInitialElement(for: currentContainer!)
+                        break
+                    }
+                }else{
+                    currentContainer = nil
+                    break
+                }
+
+            }
+        }else{
+            //if it's not nil , we just go to the next element
+            self.currentContainer = next
+            
+            //if that element also has a child, we have to go for it's child
+            if let currentContainer{
+                if currentContainer.hasChildren{
+                    goToNextInitialElement(for: currentContainer)
+                }
+            }
+            
+        }
+        if let currentContainer{
+            goToNextInitialElement(for: currentContainer)
+        }
+//        next = currentContainer
         
         if strategy == .loop {
-            if next == nil {
+            //if we have reached to the end of the loop , we should loop from begining
+            if currentContainer == nil {
                 currentContainer = _goToFirstElement()
            
                 skipNonFocusableElements(direction: .forward)
                 return
             }
         }
-        self.currentContainer = next
-        while(true){
-            
-            let firstChild = currentContainer?.children.first
-            
-            
-            //if a parent node , has more than 1 child, since we have already
-            //chained them together, we have to check when we are moving from one child to another,
-            // if we are doing so we should jump to their related initialElement when changing focus
-            let children = currentContainer?.parent?.children ?? []
-            for child in children where child != firstChild {
-                if (currentContainer?.myHash == child.myHash){
-                    goToNextInitialElement(for: child)
-                    break
-                }
-            }
-            
-            guard let firstChild else {
-                break
-            }
-            goToNextInitialElement(for: firstChild)
-            
-         
-            
-            
-            if !firstChild.hasChildren{
-                break
-            }
-            
-        }
+ 
         skipNonFocusableElements( direction: .forward)
     }
     internal func goToNextInitialElement(for current : FocusContainer){
         let result = recursiveGoToNextInitialElement(for: current)
         self.currentContainer = result
     }
-    
-    private func goToLastElement(of parent : FocusContainer , in container : FocusContainer) -> FocusContainer{
-        var current : FocusContainer = container
-        guard current.nextFocus != nil else { return current}
-        var next = current.nextFocus
-        
-        while(true){
-            if next == nil || next?.parent != parent{
-                return current
-            }
-            current = next!
-            next = current.nextFocus
-        }
-        
-    }
+
     private func recursiveGoToNextInitialElement(for current : FocusContainer) -> FocusContainer? {
         let nextOne = current
         while(true){
@@ -231,7 +238,7 @@ import SwiftUI
             if let firstOne {
                 let focusContainer = find(firstOne, in: nextOne)
                 guard let focusContainer else {
-                    logger.warning("couldn't find focus container for \(firstOne.myHash)")
+                    logger.warning("couldn't find focus container for \(firstOne.name)")
                     return nil
                 }
                 if focusContainer.hasChildren{
@@ -283,31 +290,17 @@ import SwiftUI
     
     ///Goes to the previous focusable element in the UI
     public func goPrev(){
-        //Algorithm :
-        ///1 - we check is there is any focusable element in the field
-        /// 1-1 : if does we continue
-        ///  1-2 : else we just exit
-        ///2: we check if current container is nil (nothing is selected already)
-        /// 2-1: we go to last element (skipping non focusable ones)
-        ///3: we check if prev element of this element is nil
-        ///    if it's nil, it might either be the last element in the entire tree, or just the element
-        ///    of a first child in a tree.
-        ///  3-1: if has a parent, which means that it's the first element in children of a sub tree
-        ///  we go to it's parent node
-        ///     if parent node does have a prev node, we go to the parent's prev node
-        ///     if not, we keep going up and repeating the process
-        ///     if we reach nil (aka top level) we just go the previous node in the top level tree
-        ///     if that node doesn't have any prev node, we must go to the last element in the top tree
-        ///4: if the prev node is not nil , we just go to prev node ( skipping non-focusable ones)
-        
-        
+        lastMove = .backward
         guard hasAtLeastOneFocusableElement() else { return}
+        
+        //if it's nil(means nothing is selected at all) , we focus the last element
         guard currentContainer != nil else {
             goToLastElement()
             return
         }
         var prev = currentContainer?.prevFocus
         
+        //if prev element is nil , we have to check if does have a parent or not
         if prev == nil {
             
             
@@ -328,7 +321,9 @@ import SwiftUI
          
         prev = currentContainer?.prevFocus
         if prev != nil {
-            currentContainer = prev
+            
+            currentContainer = _goToLastActualElement(in: prev)
+            
         }else{
             if strategy == .loop{
                 goToLastElement()
@@ -362,87 +357,36 @@ import SwiftUI
         }
     }
 
-    func insert<Focusable: FocusableFeilds>(_ model : Focusable.Type , under current : (any FocusableFeilds)) {
-        
+    
+    //only used for testing, add sub focus to an already existing focus
+    func insert<Focusable: FocusableFeilds>(_ model : Focusable.Type , under current : (any FocusableFeilds)){
         let feild = model.allCases.map({$0}).first!
         
         let element = find(current,in:initial)
         guard let element else {
-            logger.error("related element not found, hash: \(current.myHash.description)")
-            return }
-        let newIndex = find(feild, in:initial)
-        //if the newIndex is not nill , it means that we have already inserted this element, we just return
-        guard newIndex == nil else { return  }
+            logger.error("related element not found, hash: \(current.name.description)")
+            return  }
         
+        let builder = ContainerBuilder(feild).build().first!
         
-        
-        let newContainer = ContainerBuilder(feild).build().first
-        guard let newContainer else { return }
-        set(parent: element, in: newContainer)
-        
-        
-        let firstChild = element.children.first
-        
-        element.children.insert( newContainer, at: 0)
-        if let firstChild{
-            element.nextFocus = newContainer
-//            element.nextFocus = newContainer
-            newContainer.prevFocus = nil
-            
-            let lastElementInNewContainer = goToLastElement(of: element, in: newContainer)
-            firstChild.prevFocus = lastElementInNewContainer
-            lastElementInNewContainer.nextFocus = firstChild
-            
-//            let lastElementInLastChild = goToLastElement(of: element, in: lastChild)
-//            
-//            lastElementInLastChild.nextFocus = newContainer
-//            newContainer.prevFocus = lastElementInLastChild
-        }else{
-            newContainer.prevFocus =  nil
-            setNextFocus(of: newContainer, to: element.nextFocus)
-        }
-        
-        
-        //setting to start again
-//        self.currentContainer = initial
-    }
-    private func setNextFocus(of newContainer : FocusContainer , to element : FocusContainer?){
-        //if there is no next , traversing the link list is just unneccessary
-        guard let element else { return  }
-        var current : FocusContainer? = newContainer
+        var current : FocusContainer? = builder
         while(true){
-            if current?.nextFocus == nil {
-                current?.nextFocus = element
-                element.prevFocus = current
-                break
-            }
-            current = current?.nextFocus
+            if current == nil { break}
+            current!.parent = element
+            current = current!.nextFocus
         }
         
+        element.children.insert(builder, at: 0)
+        
     }
-    private func set(parent element : FocusContainer, in list : FocusContainer){
-        var current : FocusContainer? = list
-        while(current != nil){
-            current?.parent = element
-            current = current?.nextFocus
-        }
-    }
-    
+
     ///Detects if any of children views has focus or not?
-    public func childrenHasFocus(_ parent : any FocusableFeilds) -> Bool{
-        let parent = find(parent, in: initial)
-        guard let parent else { return false }
-        return childrendHasFocus(parent)
-    }
-    internal func childrendHasFocus(_ parent : FocusContainer) -> Bool{
-        
-        
-        
+    func childrendHasFocus(_ parent : FocusContainer) -> Bool{
         for child in parent.children {
             var currentChild : FocusContainer? = child
             while(true){
                 guard currentChild != nil else { break}
-                if currentContainer?.myFocus.myHash == currentChild!.myFocus.myHash{
+                if currentContainer == currentChild!{
                     return true
                 }
                 if currentChild!.hasChildren{
@@ -458,26 +402,25 @@ import SwiftUI
     }
     
     ///jump to an specefic element in the UI, skipping non-focusable elements.
-    public func go(to element : any FocusableFeilds){
+    public func go(to element : FocusContainer?){
+        lastMove = nil
+        guard let element else { return}
         guard hasAtLeastOneFocusableElement() else { return}
-        let find = self.find(element, in: initial)
-        
-        guard let find else {
-            logger.error("Can't find \(element.myHash) in the list")
-            return}
+    
        
-        currentContainer = find
-        if find.hasChildren{
-            goToNextInitialElement(for: find)
-        }
+        currentContainer = element
+    
+        goToNextInitialElement(for: element)
+        
         skipNonFocusableElements(direction: .forward)
     }
+    
     internal func find( _ feild : (any FocusableFeilds), in initial : FocusContainer? ) -> FocusContainer?{
         var next : FocusContainer? = initial
-        let myHash = feild.myHash
+        let myHash = feild.hashValue
         while(next != nil){
             
-            if next?.myFocus.myHash == myHash{
+            if next?.myFocus.hashValue == myHash{
                 return next
             }
             if let children = next?.children{
@@ -496,6 +439,12 @@ import SwiftUI
     
     ///Set the focus to nil, removing focus
     public func unFocus(){
+        lastMove = nil
         currentContainer = nil
+    }
+}
+extension FocusManager : Equatable {
+    nonisolated public static func == (lhs: FocusManager, rhs: FocusManager) -> Bool {
+        return lhs.id == rhs.id
     }
 }

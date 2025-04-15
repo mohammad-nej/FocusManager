@@ -16,16 +16,26 @@ import SwiftUI
     
     @Binding var isFocused : Bool
  
+     @FocusState private var focused : Bool
     public func body(content: Content) -> some View{
         content
-            .onChange(of: manager?.currentContainer?.myFocus.myHash,initial: true){
+            .focused($focused)
+            .onChange(of: focused){
+                guard focused == false else { return}
+                isFocused = false
+            }
+            .onChange(of: manager?.currentContainer,initial: true){
                 guard focusEnabled else {isFocused = false;return}
                 guard let myFocus else { isFocused = false;return}
-                guard let manager else {isFocused = false;ErrorGenerator(error: .noFocusManagerFoundFor(myFocus));return}
+                guard let manager else {isFocused = false;
+                    ErrorGenerator(error: .noFocusManagerFoundFor(myFocus));
+                    return}
+                guard let myContainer = myContainer else {isFocused = false; return}
+                if manager.currentContainer == myContainer {
+                    isFocused = true;
+                    return}
                 
-                if manager.currentContainer?.myFocus.myHash == myFocus.myHash {isFocused = true;return}
                 
-                guard let myContainer else {isFocused = false; return}
 
                 isFocused = manager.childrendHasFocus(myContainer)
             }
