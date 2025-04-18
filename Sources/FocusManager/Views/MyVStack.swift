@@ -36,7 +36,7 @@ public struct MyVStack: Layout {
 
     public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
 
-        logger.info("I am running with : \(String(describing: proposal))")
+        
         var currentY : CGFloat = bounds.minY
         for index in subviews.indices {
             
