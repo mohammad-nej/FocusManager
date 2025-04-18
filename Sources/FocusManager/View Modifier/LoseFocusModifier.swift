@@ -20,8 +20,9 @@ struct OnLoseFocusModifier : ViewModifier {
     func body(content: Content) -> some View {
         content
             .isActive($isActive)
-            .onChange(of: isActive,initial: true){
-                guard  !isActive else { return }
+            .onChange(of: isActive,initial: true){ oldValue , newValue in
+                guard oldValue == true && newValue == false else { return }
+                
                 action(container,manager)
             }
     }
