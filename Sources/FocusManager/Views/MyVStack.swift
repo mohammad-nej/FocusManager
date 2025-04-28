@@ -52,8 +52,6 @@ public struct MyVStack: Layout {
             if !isEmpty {
                 
                 currentY = currentY + spacing + dimensions.height
-            }else{
-                logger.info("Found an empty view at index : \(index)")
             }
         }
     }

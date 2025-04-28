@@ -63,7 +63,7 @@ import SwiftUI
             }else{
                 Text("")
                     .onAppear{
-                        if let currentFocusContainerEnv{
+                        if currentFocusContainerEnv != nil{
                             addingChild()
                         
                         }else{
@@ -89,13 +89,7 @@ import SwiftUI
                     containerManagerEnv.currentContainer = newContainer
                     return
                 }
-               
-                
                 containerManagerEnv.goToNextInitialElement(for: newContainer)
-                    
-                
-                
-                
             }
 
 
@@ -144,8 +138,8 @@ import SwiftUI
          }
      }
      func addingChild(){
-         guard let containerManagerEnv else{  ErrorGenerator(error: .noFocusManagerFoundFor(myFocus)); return}
-//                guard containerManagerEnv.find(con)
+         guard containerManagerEnv != nil else{  ErrorGenerator(error: .noFocusManagerFoundFor(myFocus)); return}
+
 
          let container = FocusContainer(current: myFocus)
  
@@ -155,17 +149,12 @@ import SwiftUI
              let prev = currentFocusContainerEnv.children.first
              if  detectIfItsNewChild(){
                  currentFocusContainerEnv.children.insert(newContainer, at: 0)
-//                 if currentFocusContainerEnv.children.count > 1{
-//                     let secondOne = currentFocusContainerEnv.children[1]
-//                     secondOne.prevFocus = newContainer
-//                     newContainer.nextFocus = secondOne
-//                 }
                  return
              }
              if let prev {
                  prev.prevFocus = newContainer
                  newContainer.nextFocus = prev
-                 currentFocusContainerEnv.children[0] = newContainer
+                 currentFocusContainerEnv.children.insert(newContainer, at: 0)
              }else{
                  currentFocusContainerEnv.children.append(newContainer)
              }
